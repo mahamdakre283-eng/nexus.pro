@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="ku" dir="rtl">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Saman Cafeteria - کافتریا سامان</title>
+  <!-- Google Fonts for Kurdish, Arabic & English -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Vazirmatn:wght@300;500;700;900&display=swap"
+    rel="stylesheet">
+  <!-- FontAwesome for Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Firebase App & Database Compat -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
+  <!-- Firebase Config and DB Fallback -->
+  <script src="firebase-config.js"></script>
+  <script src="db.js"></script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body class="lang-ku">
+  <!-- Main Menu Interface -->
+  <div class="menu-app-container">
+    <!-- Top Rectangular Image Slider (Changes every 3 seconds) -->
+    <div class="top-slider-container">
+      <div class="top-slide active" id="slide0"></div>
+      <div class="top-slide" id="slide1"></div>
+      <div class="top-slide" id="slide2"></div>
+      <div class="slider-overlay"></div>
+    </div>
+
+    <!-- Header Section -->
+    <header class="app-header">
+      <div class="header-main-row">
+        <!-- Logo - Dynamic position handled by CSS (right side for KU) -->
+        <div class="logo-wrapper" id="headerLogoWrapper">
+          <img src="" alt="Saman Logo" id="appLogo" class="circular-logo">
+        </div>
+
+        <!-- Café Branding -->
+        <div class="branding">
+          <h1 id="cafeName">کافتریا سامان</h1>
+          <p id="cafeSubtitle">ب خێرهاتی بۆ کافتریا سامان</p>
+        </div>
+
+        <!-- Language Switcher -->
+        <div class="lang-picker">
+          <button class="lang-btn active" onclick="setLanguage('ku')">KU</button>
+          <button class="lang-btn" onclick="setLanguage('ar')">AR</button>
+          <button class="lang-btn" onclick="setLanguage('en')">EN</button>
+        </div>
+      </div>
+
+      <!-- Quick Search Bar -->
+      <div class="search-container">
+        <i class="fa-solid fa-magnifying-glass search-icon"></i>
+        <input type="text" id="searchInput" placeholder="گەڕیان بۆ خوارن یان ڤەخوارنان..." oninput="handleSearch()">
+      </div>
+    </header>
+
+    <!-- Circular Categories Section -->
+    <section class="categories-section">
+      <div class="section-title-row">
+        <h2 id="categoriesTitle">پۆلێنێن مە</h2>
+      </div>
+      <div class="categories-scroll-wrapper" id="categoriesContainer">
+        <!-- Circular Categories will be injected here by JS -->
+      </div>
+    </section>
+
+    <!-- Menu Items Grid (Exactly 2 items per row on mobile) -->
+    <main class="menu-items-section">
+      <div class="grid-header">
+        <h2 id="activeCategoryName">هەمی پۆلێن</h2>
+        <span class="items-count" id="itemsCount">0 بابەت</span>
+      </div>
+      <div class="menu-grid" id="menuGrid">
+        <!-- 2-Column Menu Items will be injected here by JS -->
+      </div>
+    </main>
+  </div>
+
+  <!-- Floating Cart Button -->
+  <div class="floating-cart" id="floatingCartBtn" onclick="toggleCartModal(true)">
+    <div class="cart-icon-wrapper">
+      <i class="fa-solid fa-basket-shopping"></i>
+      <span class="cart-badge" id="cartBadgeCount">0</span>
+    </div>
+    <div class="cart-info-preview">
+      <span id="cartPreviewText">سەبەتە</span>
+      <span class="cart-preview-total" id="cartPreviewTotal">0 IQD</span>
+    </div>
+  </div>
+
+  <!-- Cart Modal (Bottom Drawer Style for Premium Mobile feel) -->
+  <div class="cart-modal-backdrop" id="cartModalBackdrop" onclick="toggleCartModal(false)">
+    <div class="cart-modal-content" onclick="event.stopPropagation()">
+      <div class="cart-modal-header">
+        <div class="header-title">
+          <i class="fa-solid fa-basket-shopping"></i>
+          <span id="cartModalTitle">سەبەتەیا داواکاریان</span>
+        </div>
+        <button class="close-cart-btn" onclick="toggleCartModal(false)">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="cart-modal-body" id="cartItemsContainer">
+        <!-- Selected Items list will be injected here -->
+      </div>
+
+      <div class="cart-modal-footer">
+        <!-- Note Input -->
+        <div class="note-input-group">
+          <label for="orderNote" id="noteLabel">تێبینی:</label>
+          <input type="text" id="orderNote" placeholder="تێبینیێن خۆ بنڤیسە (بێ شەکر، ...)">
+        </div>
+
+        <div class="cart-totals">
+          <div class="total-row">
+            <span id="totalLabel">کۆم:</span>
+            <span class="total-price-value" id="cartTotalValue">0 IQD</span>
+          </div>
+        </div>
+
+        <div class="cart-actions-row">
+          <button class="send-order-btn" onclick="sendOrder()">
+            <i class="fa-brands fa-whatsapp"></i>
+            <span id="sendOrderBtnText">فرێکرنا داواکاریێ ب وەتسئەپی</span>
+          </button>
+          <button class="clear-order-btn" onclick="clearCart()">
+            <i class="fa-solid fa-trash-can"></i>
+            <span id="clearOrderBtnText">پاککرنا سەبەتەیێ</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Receipt Modal (Thermal Paper Look) -->
+  <div class="receipt-modal-backdrop" id="receiptModalBackdrop" onclick="closeReceiptModal()">
+    <div class="receipt-paper" onclick="event.stopPropagation()">
+      <div class="receipt-header">
+        <div class="receipt-cafe-name" id="receiptCafeName">Saman Cafeteria</div>
+        <div class="receipt-subtitle" id="receiptSubtitle">داواکاریا تە هاتە فرێکرن</div>
+      </div>
+      <div class="receipt-divider"></div>
+      <div class="receipt-details">
+        <div class="receipt-detail-row">
+          <span class="detail-label" id="receiptDateLabel">ڕێکەوت:</span>
+          <span class="detail-value" id="receiptDateVal">-</span>
+        </div>
+      </div>
+      <div class="receipt-divider"></div>
+      <div class="receipt-items-header">
+        <span id="receiptItemCol">بابەت</span>
+        <span id="receiptTotalCol">کۆم</span>
+      </div>
+      <div class="receipt-items-list" id="receiptItemsList">
+        <!-- Receipt items loaded dynamically -->
+      </div>
+      <div class="receipt-divider"></div>
+      <div class="receipt-total-row">
+        <span id="receiptTotalLabel">کۆم:</span>
+        <span class="receipt-total-val" id="receiptTotalVal">0 IQD</span>
+      </div>
+      <div class="receipt-divider"></div>
+      <div class="receipt-footer">
+        <p id="receiptFooterNote">سوپاس بۆ سەرەدانا وە</p>
+      </div>
+      <div class="receipt-actions">
+        <button class="receipt-send-btn" onclick="confirmAndSendWhatsApp()">
+          <i class="fa-solid fa-paper-plane"></i> <span id="receiptConfirmSendBtnText">پشتڕاستکرن و فرێکرن</span>
+        </button>
+        <button class="receipt-cancel-btn" onclick="closeReceiptModalOnly()">
+          <span id="receiptCancelBtnText">پاشگەزبوون</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification System -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script src="app.js"></script>
+</body>
+
+</html>

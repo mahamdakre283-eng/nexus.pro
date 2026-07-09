@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Saman Cafeteria - Admin Panel</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;900&family=Vazirmatn:wght@300;500;700;900&display=swap"
+    rel="stylesheet">
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Firebase App & Database Compat -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
+  <!-- Firebase Config and DB Fallback -->
+  <script src="firebase-config.js"></script>
+  <script src="db.js" type="module"></script>
+  <link rel="stylesheet" href="admin.css">
+</head>
+
+<body>
+
+  <!-- Loading Screen (Beautiful loading effect required) -->
+  <div class="loader-overlay" id="loaderOverlay">
+    <div class="loader-content">
+      <div class="loader-spinner"></div>
+      <div class="loader-logo-glow" id="loaderLogoContainer">
+        <i class="fa-solid fa-mug-hot" id="loaderLogoIcon"></i>
+        <img src="" id="loaderLogoImg" class="hidden"
+          style="width: 70px; height: 70px; border-radius: 50%; object-fit: cover; border: 2px solid var(--accent-color); box-shadow: 0 0 15px var(--accent-color);">
+      </div>
+      <h2 id="loaderCafeName">SAMAN</h2>
+      <p>Loading Admin Dashboard...</p>
+    </div>
+  </div>
+
+  <!-- Login Section (Username: hama, Password: 12345) -->
+  <div class="login-wrapper" id="loginWrapper">
+    <div class="login-card">
+      <div class="login-header">
+        <div class="login-logo" id="loginLogoContainer">
+          <i class="fa-solid fa-mug-hot" id="loginLogoIcon"></i>
+          <img src="" id="loginLogoImg" class="hidden"
+            style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 2px solid var(--accent-color); box-shadow: 0 0 15px rgba(212, 175, 55, 0.3);">
+        </div>
+        <h1 id="loginCafeName">Saman Cafeteria</h1>
+        <p>Admin Authorization</p>
+      </div>
+
+      <div class="login-alert" id="loginAlert">Incorrect username or password!</div>
+
+      <form id="loginForm" onsubmit="handleLogin(event)">
+        <div class="input-field">
+          <label for="username">Username</label>
+          <div class="input-icon-wrapper">
+            <i class="fa-solid fa-user"></i>
+            <input type="text" id="username" placeholder="Enter username" required>
+          </div>
+        </div>
+
+        <div class="input-field">
+          <label for="password">Password</label>
+          <div class="input-icon-wrapper">
+            <i class="fa-solid fa-lock"></i>
+            <input type="password" id="password" placeholder="Enter password" required>
+          </div>
+        </div>
+
+        <button type="submit" class="login-btn">
+          <span>Login</span> <i class="fa-solid fa-arrow-right"></i>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Dashboard Main Panel (Hidden by default, displayed after login) -->
+  <div class="dashboard-wrapper hidden" id="dashboardWrapper">
+
+    <!-- Top Branding / Header -->
+    <header class="dash-header">
+      <div class="header-left">
+        <div class="dash-logo-container">
+          <img src="" alt="Saman Logo" id="dashLogo" class="dash-logo">
+        </div>
+        <div class="dash-title">
+          <h1>Saman Cafeteria</h1>
+          <span class="badge">Admin Dashboard</span>
+        </div>
+      </div>
+      <div class="header-actions">
+        <div class="admin-lang-picker">
+          <select id="adminLangSelector" onchange="changeAdminLanguage(this.value)">
+            <option value="ku">Kurdish (Badini)</option>
+            <option value="ar">Arabic (العربية)</option>
+            <option value="en">English</option>
+          </select>
+        </div>
+        <button class="logout-btn" onclick="handleLogout()">
+          <i class="fa-solid fa-arrow-right-from-bracket"></i>
+          <span id="logoutBtnText">Logout</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Navigation Tabs (3 Sections) -->
+    <nav class="dash-tabs">
+      <button class="tab-link active" onclick="switchTab('categoriesTab', event)">
+        <i class="fa-solid fa-tags"></i>
+        <span>Categories</span>
+      </button>
+      <button class="tab-link" onclick="switchTab('itemsTab', event)">
+        <i class="fa-solid fa-mug-hot"></i>
+        <span>Items</span>
+      </button>
+      <button class="tab-link" onclick="switchTab('settingsTab', event)">
+        <i class="fa-solid fa-gears"></i>
+        <span>Settings</span>
+      </button>
+    </nav>
+
+    <!-- Content Sections -->
+    <main class="dash-content">
+
+      <!-- Section 1: Adding/Managing Categories -->
+      <section id="categoriesTab" class="tab-pane active">
+        <div class="panel-layout">
+          <!-- Add Category Form -->
+          <div class="card form-card">
+            <h2 id="catFormHeader"><i class="fa-solid fa-plus-circle"></i> Add New Category</h2>
+            <form id="categoryForm" onsubmit="saveCategory(event)">
+              <!-- Edit Category ID tracker -->
+              <input type="hidden" id="editCategoryId" value="">
+
+              <div class="input-field">
+                <label>Category Name (English)</label>
+                <input type="text" id="catNameEN" placeholder="e.g. Hot Drinks" required>
+              </div>
+              <div class="input-field">
+                <label>Category Name (Arabic)</label>
+                <input type="text" id="catNameAR" placeholder="مثال: المشروبات الساخنة" required>
+              </div>
+              <div class="input-field">
+                <label>Category Name (Kurdish Badini)</label>
+                <input type="text" id="catNameKU" placeholder="مثال: ڤەخوارنێن گەرم" required>
+              </div>
+
+              <!-- Photo Upload Section (Upload from phone/storage) -->
+              <div class="input-field">
+                <label>Category Image</label>
+                <div class="image-uploader-box">
+                  <input type="file" id="catImageFile" accept="image/*"
+                    onchange="previewUpload(this, 'catImagePreview')">
+                  <div class="upload-placeholder" id="catUploadPlaceholder">
+                    <i class="fa-solid fa-cloud-arrow-up"></i>
+                    <span>Click to Upload Image</span>
+                  </div>
+                  <img id="catImagePreview" class="upload-preview hidden" alt="Category Image Preview">
+                </div>
+              </div>
+
+              <div class="form-actions">
+                <button type="submit" class="submit-btn" id="catSubmitBtn">
+                  <i class="fa-solid fa-check"></i> Add Category
+                </button>
+                <button type="button" class="cancel-btn hidden" id="catCancelBtn" onclick="cancelCategoryEdit()">
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Existing Categories List -->
+          <div class="card list-card">
+            <h2><i class="fa-solid fa-list"></i> Current Categories</h2>
+            <div class="items-list-grid" id="categoriesList">
+              <!-- Categories loaded dynamically -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 2: Adding/Managing Items (with Category Select, Upload, Edit/Delete options) -->
+      <section id="itemsTab" class="tab-pane">
+        <div class="panel-layout">
+          <!-- Add / Edit Item Form -->
+          <div class="card form-card">
+            <h2 id="itemFormHeader"><i class="fa-solid fa-plus-circle"></i> Add New Item</h2>
+            <form id="itemForm" onsubmit="saveItem(event)">
+              <!-- Edit Item ID tracker -->
+              <input type="hidden" id="editItemId" value="">
+
+              <div class="input-field">
+                <label>Select Category</label>
+                <select id="itemCategorySelect" required>
+                  <!-- Categories populated dynamically -->
+                </select>
+              </div>
+              <div class="grid-fields">
+                <div class="input-field">
+                  <label>Item Name (English)</label>
+                  <input type="text" id="itemNameEN" placeholder="e.g. Cappuccino" required>
+                </div>
+                <div class="input-field">
+                  <label>Price (IQD)</label>
+                  <input type="number" id="itemPrice" placeholder="e.g. 5000" min="0" required>
+                </div>
+              </div>
+              <div class="input-field">
+                <label>Item Name (Arabic)</label>
+                <input type="text" id="itemNameAR" placeholder="مثال: كابتشينو" required>
+              </div>
+              <div class="input-field">
+                <label>Item Name (Kurdish Badini)</label>
+                <input type="text" id="itemNameKU" placeholder="مثال: کاپوچينۆ" required>
+              </div>
+              <div class="input-field">
+                <label>Description (English)</label>
+                <textarea id="itemDescEN" placeholder="e.g. Rich espresso with steamed milk foam"></textarea>
+              </div>
+              <div class="input-field">
+                <label>Description (Arabic)</label>
+                <textarea id="itemDescAR" placeholder="مثال: قهوة غنية برغوة الحليب"></textarea>
+              </div>
+              <div class="input-field">
+                <label>Description (Kurdish Badini)</label>
+                <textarea id="itemDescKU" placeholder="مثال: ئێسپریسۆیا ب تام دگەل کەفا شیری"></textarea>
+              </div>
+
+              <!-- Photo Upload Section -->
+              <div class="input-field">
+                <label>Item Image</label>
+                <div class="image-uploader-box">
+                  <input type="file" id="itemImageFile" accept="image/*"
+                    onchange="previewUpload(this, 'itemImagePreview')">
+                  <div class="upload-placeholder" id="itemUploadPlaceholder">
+                    <i class="fa-solid fa-cloud-arrow-up"></i>
+                    <span>Click to Upload Image</span>
+                  </div>
+                  <img id="itemImagePreview" class="upload-preview hidden" alt="Item Image Preview">
+                </div>
+              </div>
+
+              <div class="form-actions">
+                <button type="button" class="cancel-btn hidden" id="itemCancelBtn" onclick="cancelItemEdit()">
+                  Cancel Edit
+                </button>
+                <button type="submit" class="submit-btn" id="itemSubmitBtn">
+                  <i class="fa-solid fa-check"></i> Add Item
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Existing Items List (Edit & Delete options available) -->
+          <div class="card list-card">
+            <div class="list-card-header">
+              <h2><i class="fa-solid fa-cubes"></i> Items List</h2>
+              <div class="filter-controls">
+                <select id="itemFilterSelect" onchange="filterItemsList()">
+                  <option value="all">All Categories</option>
+                  <!-- Populated dynamically -->
+                </select>
+              </div>
+            </div>
+            <div class="items-list-grid" id="itemsList">
+              <!-- Items loaded dynamically -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 3: Settings (Modify background images & circular logo) -->
+      <section id="settingsTab" class="tab-pane">
+        <div class="card settings-card">
+          <h2><i class="fa-solid fa-gears"></i> General Settings</h2>
+          <p class="section-desc">Manage your branding, cafeteria details, and the 3-second rotating top slider images
+            here.</p>
+
+          <form id="settingsForm" onsubmit="saveSettings(event)">
+
+            <div class="settings-grid">
+
+              <!-- Modify Cafeteria Name -->
+              <div class="settings-box">
+                <h3><i class="fa-solid fa-mug-hot"></i> Cafeteria Name Customization</h3>
+                <p>Edit the Cafeteria Name displayed on the menu for each language.</p>
+                <div class="input-field">
+                  <label>Cafeteria Name (English)</label>
+                  <input type="text" id="settingsCafeNameEN" placeholder="e.g. Saman Cafeteria" required>
+                </div>
+                <div class="input-field">
+                  <label>Cafeteria Name (Arabic)</label>
+                  <input type="text" id="settingsCafeNameAR" placeholder="e.g. كافتيريا سامان" required>
+                </div>
+                <div class="input-field">
+                  <label>Cafeteria Name (Kurdish Badini)</label>
+                  <input type="text" id="settingsCafeNameKU" placeholder="e.g. کافتریا سامان" required>
+                </div>
+              </div>
+
+              <!-- Modify WhatsApp Number -->
+              <div class="settings-box">
+                <h3><i class="fa-brands fa-whatsapp"></i> WhatsApp Order Number</h3>
+                <p>Set the WhatsApp phone number where customer orders will be sent.</p>
+                <div class="input-field">
+                  <label>WhatsApp Number (e.g. 07508244332)</label>
+                  <input type="text" id="settingsWhatsappNumber" placeholder="e.g. 07508244332" required>
+                </div>
+              </div>
+
+              <!-- Modify Logo Image -->
+              <div class="settings-box">
+                <h3><i class="fa-solid fa-circle-user"></i> Logo Customization</h3>
+                <p>This logo will display in the circular container at the top of the menu.</p>
+                <div class="logo-setting-preview-row">
+                  <div class="logo-preview-circle">
+                    <img src="" id="settingsLogoPreview" alt="Circular Logo Preview">
+                  </div>
+                  <div class="logo-upload-controls">
+                    <input type="file" id="logoUploadFile" accept="image/*"
+                      onchange="previewSettingsUpload(this, 'settingsLogoPreview')">
+                    <label for="logoUploadFile" class="setting-upload-btn">
+                      <i class="fa-solid fa-image"></i> Change Logo Image
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Modify rotating slide images -->
+              <div class="settings-box">
+                <h3><i class="fa-solid fa-images"></i> Background Slideshow</h3>
+                <p>Upload the 3 background images that transition every 3 seconds on the top image slider.</p>
+
+                <div class="slide-inputs-list">
+                  <!-- Slide 1 -->
+                  <div class="slide-input-row">
+                    <div class="slide-preview-thumb">
+                      <img src="" id="slideThumb0" alt="Slide 1">
+                    </div>
+                    <div class="slide-upload-controls">
+                      <label>Background Slide 1</label>
+                      <input type="file" id="slideFile0" accept="image/*"
+                        onchange="previewSettingsUpload(this, 'slideThumb0')">
+                    </div>
+                  </div>
+
+                  <!-- Slide 2 -->
+                  <div class="slide-input-row">
+                    <div class="slide-preview-thumb">
+                      <img src="" id="slideThumb1" alt="Slide 2">
+                    </div>
+                    <div class="slide-upload-controls">
+                      <label>Background Slide 2</label>
+                      <input type="file" id="slideFile1" accept="image/*"
+                        onchange="previewSettingsUpload(this, 'slideThumb1')">
+                    </div>
+                  </div>
+
+                  <!-- Slide 3 -->
+                  <div class="slide-input-row">
+                    <div class="slide-preview-thumb">
+                      <img src="" id="slideThumb2" alt="Slide 3">
+                    </div>
+                    <div class="slide-upload-controls">
+                      <label>Background Slide 3</label>
+                      <input type="file" id="slideFile2" accept="image/*"
+                        onchange="previewSettingsUpload(this, 'slideThumb2')">
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            <div class="settings-actions">
+              <button type="submit" class="submit-btn save-settings-btn">
+                <i class="fa-solid fa-floppy-disk"></i> Save Settings
+              </button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- Toast Notification -->
+  <div class="admin-toast-container" id="adminToastContainer"></div>
+
+  <script src="admin.js"></script>
+</body>
+
+</html>
